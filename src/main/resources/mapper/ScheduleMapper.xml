@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.app.yeoback_backend.mapper.ScheduleMapper">
+
+    <!-- 일정 추가 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into tbl_schedule (trip_day_id,
+                                  member_id,
+                                  place_id,
+                                  schedule_title,
+                                  schedule_start_time,
+                                  schedule_memo,
+                                  schedule_ai_source)
+        values (#{tripDayId}, #{memberId}, #{placeId}, #{scheduleTitle}, #{scheduleStartTime}, #{scheduleMemo}, #{scheduleAiSource})
+    </insert>
+
+    <!-- 일정 한 건 조회 -->
+    <select id="selectById" resultType="com.app.yeoback_backend.dto.ScheduleDTO">
+        select id, trip_day_id, member_id,
+               place_id, schedule_title,
+               schedule_start_time, schedule_memo,
+               schedule_ai_source,
+               created_datetime,
+               updated_datetime
+        from tbl_schedule
+        where id = #{id}
+    </select>
+
+    <!-- 일차의 일정 목록 (시간순) -->
+    <select id="selectAllByTripDayId" resultType="com.app.yeoback_backend.dto.ScheduleDTO">
+        select id, trip_day_id, member_id,
+               place_id, schedule_title,
+               schedule_start_time, schedule_memo,
+               schedule_ai_source,
+               created_datetime,
+               updated_datetime
+        from tbl_schedule
+        where trip_day_id = #{tripDayId}
+        order by schedule_start_time
+    </select>
+
+    <!-- 일정 수정 -->
+    <update id="update">
+        update tbl_schedule
+        set place_id = #{placeId},
+            schedule_title = #{scheduleTitle},
+            schedule_start_time = #{scheduleStartTime},
+            schedule_memo = #{scheduleMemo},
+            updated_datetime = now()
+        where id = #{id}
+    </update>
+
+    <!-- 일정 삭제 -->
+    <delete id="delete">
+        delete from tbl_schedule
+        where id = #{id}
+    </delete>
+
+    <!-- 여행의 일정 전체 삭제 -->
+    <delete id="deleteAllByTripId">
+        delete from tbl_schedule
+        where trip_day_id in (select id
+                              from tbl_trip_day
+                              where trip_id = #{tripId})
+    </delete>
+</mapper>

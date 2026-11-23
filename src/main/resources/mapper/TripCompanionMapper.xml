@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.app.yeoback_backend.mapper.TripCompanionMapper">
+
+    <!-- 동행 추가 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into tbl_trip_companion (trip_id,
+                                        member_id,
+                                        companion_is_member,
+                                        companion_name,
+                                        companion_contact,
+                                        companion_relation)
+        values (#{tripId}, #{memberId}, #{companionIsMember}, #{companionName}, #{companionContact}, #{companionRelation})
+    </insert>
+
+    <!-- 여행의 동행 목록 -->
+    <select id="selectAllByTripId" resultType="com.app.yeoback_backend.dto.TripCompanionDTO">
+        select id, trip_id, member_id,
+               companion_is_member,
+               companion_name,
+               companion_contact,
+               companion_relation,
+               created_datetime
+        from tbl_trip_companion
+        where trip_id = #{tripId}
+        order by id
+    </select>
+
+    <!-- 여행의 동행 전체 삭제 -->
+    <delete id="deleteAllByTripId">
+        delete from tbl_trip_companion
+        where trip_id = #{tripId}
+    </delete>
+</mapper>
