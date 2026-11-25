@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.app.yeoback_backend.auth.CustomUserDetails;
 
 import java.util.List;
 import java.util.Map;
@@ -27,9 +29,9 @@ public class TripAPIController {
     // 여행 만들기
     @PostMapping("/create")
     @LogStatus
-    public ResponseEntity<?> create(@RequestBody TripDTO tripDTO) {
+    public ResponseEntity<?> create(@AuthenticationPrincipal CustomUserDetails user, @RequestBody TripDTO tripDTO) {
         log.info("tripDTO {}", tripDTO);
-        TripDTO saved = tripService.createTrip(tripDTO, getLoginMemberId());
+        TripDTO saved = tripService.createTrip(tripDTO, user.getId());
 
         return ResponseEntity.ok(Map.of("message", "여행 만들기 성공", "trip", saved));
     }
@@ -37,8 +39,8 @@ public class TripAPIController {
     // 여행 한 건 조회 (동행 · 일차 · 일정 포함)
     @GetMapping("/detail")
     @LogStatus
-    public ResponseEntity<?> detail(@RequestParam Long id) {
-        TripDTO trip = tripService.getTrip(id, getLoginMemberId());
+    public ResponseEntity<?> detail(@AuthenticationPrincipal CustomUserDetails user, @RequestParam Long id) {
+        TripDTO trip = tripService.getTrip(id, user.getId());
 
         return ResponseEntity.ok(Map.of("message", "여행 조회 성공", "trip", trip));
     }
@@ -46,8 +48,8 @@ public class TripAPIController {
     // 내 여행 목록
     @GetMapping("/list")
     @LogStatus
-    public ResponseEntity<?> list() {
-        List<TripDTO> trips = tripService.getMyTrips(getLoginMemberId());
+    public ResponseEntity<?> list(@AuthenticationPrincipal CustomUserDetails user) {
+        List<TripDTO> trips = tripService.getMyTrips(user.getId());
 
         return ResponseEntity.ok(Map.of("message", "여행 목록 조회 성공", "trips", trips));
     }
@@ -55,9 +57,9 @@ public class TripAPIController {
     // 여행 수정
     @PutMapping("/update")
     @LogStatus
-    public ResponseEntity<?> update(@RequestBody TripDTO tripDTO) {
+    public ResponseEntity<?> update(@AuthenticationPrincipal CustomUserDetails user, @RequestBody TripDTO tripDTO) {
         log.info("tripDTO {}", tripDTO);
-        tripService.updateTrip(tripDTO, getLoginMemberId());
+        tripService.updateTrip(tripDTO, user.getId());
 
         return ResponseEntity.ok(Map.of("message", "여행 수정 성공"));
     }
@@ -65,8 +67,8 @@ public class TripAPIController {
     // 여행 삭제
     @DeleteMapping("/delete")
     @LogStatus
-    public ResponseEntity<?> delete(@RequestParam Long id) {
-        tripService.deleteTrip(id, getLoginMemberId());
+    public ResponseEntity<?> delete(@AuthenticationPrincipal CustomUserDetails user, @RequestParam Long id) {
+        tripService.deleteTrip(id, user.getId());
 
         return ResponseEntity.ok(Map.of("message", "여행 삭제 성공"));
     }
@@ -76,9 +78,9 @@ public class TripAPIController {
     // 일차 제목 · 오늘의 한 문장 수정
     @PutMapping("day/update")
     @LogStatus
-    public ResponseEntity<?> updateDay(@RequestBody TripDayDTO tripDayDTO) {
+    public ResponseEntity<?> updateDay(@AuthenticationPrincipal CustomUserDetails user, @RequestBody TripDayDTO tripDayDTO) {
         log.info("tripDayDTO {}", tripDayDTO);
-        tripService.updateDay(tripDayDTO, getLoginMemberId());
+        tripService.updateDay(tripDayDTO, user.getId());
 
         return ResponseEntity.ok(Map.of("message", "일차 수정 성공"));
     }
@@ -88,8 +90,8 @@ public class TripAPIController {
     // 일차의 일정 목록
     @GetMapping("schedule/list")
     @LogStatus
-    public ResponseEntity<?> scheduleList(@RequestParam Long tripDayId) {
-        List<ScheduleDTO> schedules = tripService.getSchedules(tripDayId, getLoginMemberId());
+    public ResponseEntity<?> scheduleList(@AuthenticationPrincipal CustomUserDetails user, @RequestParam Long tripDayId) {
+        List<ScheduleDTO> schedules = tripService.getSchedules(tripDayId, user.getId());
 
         return ResponseEntity.ok(Map.of("message", "일정 목록 조회 성공", "schedules", schedules));
     }
@@ -97,9 +99,9 @@ public class TripAPIController {
     // 일정 추가
     @PostMapping("schedule/add")
     @LogStatus
-    public ResponseEntity<?> addSchedule(@RequestBody ScheduleDTO scheduleDTO) {
+    public ResponseEntity<?> addSchedule(@AuthenticationPrincipal CustomUserDetails user, @RequestBody ScheduleDTO scheduleDTO) {
         log.info("scheduleDTO {}", scheduleDTO);
-        ScheduleDTO saved = tripService.addSchedule(scheduleDTO, getLoginMemberId());
+        ScheduleDTO saved = tripService.addSchedule(scheduleDTO, user.getId());
 
         return ResponseEntity.ok(Map.of("message", "일정 추가 성공", "schedule", saved));
     }
@@ -107,9 +109,9 @@ public class TripAPIController {
     // 일정 수정
     @PutMapping("schedule/update")
     @LogStatus
-    public ResponseEntity<?> updateSchedule(@RequestBody ScheduleDTO scheduleDTO) {
+    public ResponseEntity<?> updateSchedule(@AuthenticationPrincipal CustomUserDetails user, @RequestBody ScheduleDTO scheduleDTO) {
         log.info("scheduleDTO {}", scheduleDTO);
-        tripService.updateSchedule(scheduleDTO, getLoginMemberId());
+        tripService.updateSchedule(scheduleDTO, user.getId());
 
         return ResponseEntity.ok(Map.of("message", "일정 수정 성공"));
     }
@@ -117,21 +119,10 @@ public class TripAPIController {
     // 일정 삭제
     @DeleteMapping("schedule/delete")
     @LogStatus
-    public ResponseEntity<?> deleteSchedule(@RequestParam Long id) {
-        tripService.deleteSchedule(id, getLoginMemberId());
+    public ResponseEntity<?> deleteSchedule(@AuthenticationPrincipal CustomUserDetails user, @RequestParam Long id) {
+        tripService.deleteSchedule(id, user.getId());
 
         return ResponseEntity.ok(Map.of("message", "일정 삭제 성공"));
     }
 
-
-    // 로그인한 회원 id 꺼내기
-    // JWT에는 회원 이메일이 들어 있어서(JwtTokenProvider: setSubject(username)), 이메일로 회원 id를 조회한다
-    private Long getLoginMemberId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()
-                || "anonymousUser".equals(authentication.getName())) {
-            throw new IllegalStateException("로그인이 필요합니다.");
-        }
-        return tripService.getMemberIdByEmail(authentication.getName());
-    }
 }

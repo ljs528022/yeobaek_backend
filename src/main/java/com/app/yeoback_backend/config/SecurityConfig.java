@@ -20,6 +20,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.http.converter.FormHttpMessageConverter;
+import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
+import org.springframework.security.oauth2.core.endpoint.DefaultMapOAuth2AccessTokenResponseConverter;
+import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
+import org.springframework.web.client.RestClient;
 
 @Configuration
 @EnableWebSecurity
@@ -85,6 +96,64 @@ public class SecurityConfig {
                 .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
+
+    @Bean
+    public OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest>
+    authorizationCodeAccessTokenResponseClient() {
+
+        RestClientAuthorizationCodeTokenResponseClient client =
+                new RestClientAuthorizationCodeTokenResponseClient();
+
+        client.addParametersConverter(grantRequest -> {
+            MultiValueMap<String, String> parameters =
+                    new LinkedMultiValueMap<>();
+
+            String registrationId = grantRequest
+                    .getClientRegistration()
+                    .getRegistrationId();
+
+            if ("naver".equals(registrationId)) {
+                String state = grantRequest
+                        .getAuthorizationExchange()
+                        .getAuthorizationRequest()
+                        .getState();
+
+                System.out.println("NAVER state included: " + (state != null && !state.isBlank()));
+
+                if (state != null && !state.isBlank()) {
+                    parameters.set("state", state);
+                }
+            }
+
+            return parameters;
+        });
+        OAuth2AccessTokenResponseHttpMessageConverter tokenConverter =
+                new OAuth2AccessTokenResponseHttpMessageConverter();
+
+        tokenConverter.setAccessTokenResponseConverter(parameters -> {
+            if (parameters.containsKey("error")) {
+                System.out.println("NAVER TOKEN ERROR: " + parameters.get("error"));
+                System.out.println("NAVER TOKEN DESCRIPTION: " + parameters.get("error_description"));
+            }
+
+            return new DefaultMapOAuth2AccessTokenResponseConverter().convert(parameters);
+        });
+
+        RestClient restClient = RestClient.builder()
+                .messageConverters(converters -> {
+                    converters.clear();
+                    converters.add(new FormHttpMessageConverter());
+                    converters.add(tokenConverter);
+                })
+                .defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
+                .build();
+
+        client.setRestClient(restClient);
+
+        return client;
+
+    }
+
 
 
     @Bean

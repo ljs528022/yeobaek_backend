@@ -21,6 +21,7 @@ public class ScheduleDTO implements Serializable {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long memberId;
     private Long placeId;                     // 장소 (선택)
+    private PlaceDTO place;                   // 장소 정보 (선택, 저장할 때 placeId로 연결)
     private String scheduleTitle;             // 호텔, 츠타야 ...
     private LocalDateTime scheduleStartTime;  // "2026-11-09T09:00:00"
     private String scheduleMemo;

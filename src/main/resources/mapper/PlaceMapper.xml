@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.app.yeoback_backend.mapper.PlaceMapper">
+
+    <!-- 장소 추가 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into tbl_place (google_place_id,
+                               kakao_place_id,
+                               place_name,
+                               place_address,
+                               place_lat,
+                               place_lng)
+        values (#{googlePlaceId}, #{kakaoPlaceId}, #{placeName}, #{placeAddress}, #{placeLat}, #{placeLng})
+    </insert>
+
+    <!-- 장소 한 건 조회 -->
+    <select id="selectById" resultType="com.app.yeoback_backend.dto.PlaceDTO">
+        select id, google_place_id, kakao_place_id,
+               place_name, place_address,
+               place_lat, place_lng,
+               created_datetime,
+               updated_datetime
+        from tbl_place
+        where id = #{id}
+    </select>
+
+    <!-- 외부 장소 id(구글 / 카카오)로 이미 저장된 장소 조회 -->
+    <select id="selectByExternalId" resultType="com.app.yeoback_backend.dto.PlaceDTO">
+        select id, google_place_id, kakao_place_id,
+               place_name, place_address,
+               place_lat, place_lng,
+               created_datetime,
+               updated_datetime
+        from tbl_place
+        <where>
+            <if test="googlePlaceId != null">
+                google_place_id = #{googlePlaceId}
+            </if>
+            <if test="kakaoPlaceId != null">
+                or kakao_place_id = #{kakaoPlaceId}
+            </if>
+        </where>
+        limit 1
+    </select>
+</mapper>

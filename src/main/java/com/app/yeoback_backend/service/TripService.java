@@ -1,10 +1,12 @@
 package com.app.yeoback_backend.service;
 
 import com.app.yeoback_backend.common.enumeration.TripStatus;
+import com.app.yeoback_backend.dto.PlaceDTO;
 import com.app.yeoback_backend.dto.ScheduleDTO;
 import com.app.yeoback_backend.dto.TripCompanionDTO;
 import com.app.yeoback_backend.dto.TripDTO;
 import com.app.yeoback_backend.dto.TripDayDTO;
+import com.app.yeoback_backend.repository.PlaceDAO;
 import com.app.yeoback_backend.repository.ScheduleDAO;
 import com.app.yeoback_backend.repository.TripCompanionDAO;
 import com.app.yeoback_backend.repository.TripDAO;
@@ -25,6 +27,7 @@ public class TripService {
     private final TripCompanionDAO tripCompanionDAO;
     private final TripDayDAO tripDayDAO;
     private final ScheduleDAO scheduleDAO;
+    private final PlaceDAO placeDAO;
 
     // ===================== 여행 =====================
 
@@ -56,6 +59,7 @@ public class TripService {
             for (ScheduleDTO schedule : nullToEmpty(day.getSchedules())) {
                 schedule.setTripDayId(day.getId());
                 schedule.setMemberId(memberId);
+                savePlace(schedule);
                 scheduleDAO.save(schedule);
             }
         }
@@ -125,6 +129,7 @@ public class TripService {
     public ScheduleDTO addSchedule(ScheduleDTO scheduleDTO, Long memberId) {
         checkMyDay(scheduleDTO.getTripDayId(), memberId);
         scheduleDTO.setMemberId(memberId);
+        savePlace(scheduleDTO);
         scheduleDAO.save(scheduleDTO);
         return scheduleDTO;
     }
@@ -169,6 +174,26 @@ public class TripService {
         TripDayDTO day = tripDayDAO.findById(tripDayId)
                 .orElseThrow(() -> new IllegalArgumentException("일차를 찾을 수 없습니다."));
         findMyTrip(day.getTripId(), memberId);
+    }
+
+    // 일정의 장소 저장 (이미 저장된 장소면 그 id 사용, 없으면 새로 저장) 후 placeId 연결
+    private void savePlace(ScheduleDTO schedule) {
+        PlaceDTO place = schedule.getPlace();
+        if (place == null) {
+            return;
+        }
+        if (place.getId() == null) {
+            PlaceDTO savedPlace = null;
+            if (place.getGooglePlaceId() != null || place.getKakaoPlaceId() != null) {
+                savedPlace = placeDAO.findByExternalId(place.getGooglePlaceId(), place.getKakaoPlaceId()).orElse(null);
+            }
+            if (savedPlace != null) {
+                place.setId(savedPlace.getId());
+            } else {
+                placeDAO.save(place);
+            }
+        }
+        schedule.setPlaceId(place.getId());
     }
 
     // 동행 저장

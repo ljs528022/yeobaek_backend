@@ -41,6 +41,7 @@ create table tbl_member (
 create table tbl_place (
                            id bigint generated always as identity primary key,
                            google_place_id varchar(255) unique,
+                           kakao_place_id varchar(255) unique,
                            place_name varchar(255) not null,
                            place_address varchar(255) not null,
                            place_lat decimal not null,
@@ -409,3 +410,27 @@ insert into tbl_preference (preference_name) values
 insert into tbl_vibe (vibe_name) values
                                      ('평온한'), ('계획적인'), ('평화로운'), ('활발한'), ('여유로운'), ('재밌는'), ('무계획의'), ('회복되는'), ('조용한'),
                                      ('나즈막한'), ('체계적인'), ('가벼운'), ('로컬적인'), ('활기찬'), ('체험하는');
+
+-- 여행 목적지 기본 데이터 (id 순서가 프론트 src/utils/destination.ts의 임시 매핑과 같아야 해서, 순서를 고정해서 넣는다)
+-- 나라: 1 대한민국, 2 일본, 3 베트남
+insert into tbl_destination (destination_name, destination_type) values
+                                                                     ('대한민국','country'),('일본','country'),('베트남','country');
+-- 도시: 4 서울, 5 부산, 6 제주, 7 도쿄, 8 오사카, 9 다낭 (상위 나라는 이름으로 찾아서 parent_id에 넣는다)
+insert into tbl_destination (destination_parent_id, destination_name, destination_type)
+select p.id, c.city_name, 'city'::destination_type
+from (values ('대한민국', '서울', 1), ('대한민국', '부산', 2), ('대한민국', '제주', 3),
+             ('일본', '도쿄', 4), ('일본', '오사카', 5),
+             ('베트남', '다낭', 6)) as c(country_name, city_name, ord)
+         join tbl_destination p on p.destination_name = c.country_name and p.destination_type = 'country'
+order by c.ord;
+-- 나라(출발지용 포함): 10 대만, 11 태국, 12 프랑스, 13 미국, 14 중국, 15 기타(출발지 선택용 임시 항목)
+insert into tbl_destination (destination_name, destination_type) values
+                                                                     ('대만','country'),('태국','country'),('프랑스','country'),
+                                                                     ('미국','country'),('중국','country'),('기타','country');
+-- 도시: 16 강릉, 17 경주, 18 여수, 19 후쿠오카, 20 타이베이, 21 방콕, 22 파리
+insert into tbl_destination (destination_parent_id, destination_name, destination_type)
+select p.id, c.city_name, 'city'::destination_type
+from (values ('대한민국', '강릉', 1), ('대한민국', '경주', 2), ('대한민국', '여수', 3),
+             ('일본', '후쿠오카', 4), ('대만', '타이베이', 5), ('태국', '방콕', 6), ('프랑스', '파리', 7)) as c(country_name, city_name, ord)
+         join tbl_destination p on p.destination_name = c.country_name and p.destination_type = 'country'
+order by c.ord;
